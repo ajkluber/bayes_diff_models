@@ -1,5 +1,5 @@
 from distutils.core import setup
 from Cython.Build import cythonize
 
-setup(ext_modules = cythonize("hummer.pyx"))
+setup(ext_modules = cythonize("util.pyx"))
 
