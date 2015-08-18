@@ -20,8 +20,10 @@ import time
 import numpy as np
 from scipy import linalg
 
+import pyximport
+pyximport.install()
 import util 
-from plot_and_save import plot_and_save
+from plot_and_save import plot_figures,save_datafiles
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Bayesian estimation of 1D diffusion model.")
@@ -43,22 +45,22 @@ if __name__ == "__main__":
     parser.add_argument("--gamma", 
                         type=float, 
                         required=True, 
-                        help="Smootheness scale of D. Recommended: 0.001.")
+                        help="Smootheness scale of D.")
 
     parser.add_argument("--dt", 
                         type=float, 
                         default=1, 
                         help="Timestep units per frame. Default: 1ps per frame.")
 
-    #parser.add_argument("--adaptive_stepsize", 
-    #                    action="store_true",
-    #                    help="Adaptively scale monte carlo stepsize based on acceptance ratio.")
+    parser.add_argument("--debug", 
+                        action="store_true",
+                        help="Output -lnL as opimization proceeds to monitor convergence.")
+
+    parser.add_argument("--plotfigs", 
+                        action="store_true",
+                        help="Plot things")
 
     parser.add_argument("--no_display", 
-                        action="store_true",
-                        help="Plot things without display available (e.g. on compute node).")
-
-    parser.add_argument("--debug", 
                         action="store_true",
                         help="Plot things without display available (e.g. on compute node).")
 
@@ -72,7 +74,7 @@ if __name__ == "__main__":
     gamma = args.gamma
     n_bins = args.n_bins
     no_display = args.no_display
-    #adaptive_stepsize = args.adaptive_stepsize
+    plotfigs = args.plotfigs
     debug = args.debug
 
     t_alpha = lag_frames*dt
@@ -101,9 +103,8 @@ if __name__ == "__main__":
     logging.info(" n_bins     = %5d" % n_bins)
     logging.info(" gamma      = %5.2e" % gamma)
     logging.info(" dt         = %5.2e" % dt)
-    #logging.info(" adaptive   = %s" % str(adaptive_stepsize))
     logging.info(" no-display = %s" % str(no_display))
-
+    logging.info(" plotfigs   = %s" % str(plotfigs))
 
     os.chdir("%s_diff_model/lag_frames_%d_bins_%d" % (coord_name,lag_frames,n_bins))
     if os.path.exists("Nij.npy"):
@@ -132,13 +133,19 @@ if __name__ == "__main__":
         bin_centers = 0.5*(bins[1:] + bins[:-1])
         dx = bins[1] - bins[0] 
 
-    os.chdir("gamma_%.2e" % gamma)
-
-    #n_bins,dx,t_alpha,Nij,gamma
+    # Empirical transfer matrix. Is this transposed?
+    Nij_col_sum = np.sum(Nij,axis=1)
+    Tij = np.zeros((n_bins,n_bins))
+    for i in range(n_bins):
+        if Nij_col_sum[i] == 0:
+            pass
+        else:
+            Tij[i,:] = Nij[i,:]/Nij_col_sum[i]
 
     ########################################################################
     # Initialize F, D, lnL
     ########################################################################
+    os.chdir("gamma_%.2e" % gamma)
     logging.info("Initializing F, D, and log-likelihood")
     F = np.ones(n_bins)
     D = np.ones(n_bins)
@@ -194,27 +201,20 @@ if __name__ == "__main__":
             if debug:
                 print "  %-10d  %-15.4f" % (n*n_attempts,neg_lnL)
 
-            #if adaptive_stepsize: 
-            #    # Adaptively scale step size to match acceptance
-            #    # ratio of 0.5 in all bins. DEPRECATED
-            #    if np.all(F_attempts):
-            #        ratio_F = F_accepts/F_attempts
-            #        F_step[ratio_F <= 0.5] *= 0.95
-            #        F_step[ratio_F > 0.5] *= 1.05
-            #    if np.all(D_attempts):
-            #        ratio_D = D_accepts/D_attempts
-            #        D_step[ratio_D <= 0.5] *= 0.95
-            #        D_step[ratio_D > 0.5] *= 1.05
         total_steps += n_steps*n_attempts
     runsecs = time.time() - starttime
     if debug:
         print "Took %.2f min for %d steps, %.2e steps per sec" % (runsecs/60.,total_steps,total_steps/runsecs)
     
     Propagator = util.calculate_propagator(n_bins,F,D,dx,t_alpha)
-    plot_and_save(neg_lnL_all,F_all,D_all,F,D,
-                bin_centers,beta_MC_schedule,beta_MC_steps,
-                n_stages,n_attempts,gamma,coord_name,no_display,
-                Propagator,Nij)
+
+    save_datafiles(beta_MC_schedule,beta_MC_steps,Tij,Propagator,F,D,F_all,D_all,neg_lnL_all)
+
+    if plotfigs:
+        plot_figures(neg_lnL_all,F_all,D_all,F,D,
+                    bin_centers,beta_MC_schedule,beta_MC_steps,
+                    n_stages,n_attempts,gamma,coord_name,no_display,
+                    Propagator,Tij)
 
     logging.info("Done")
     os.chdir("../../..")
