@@ -8,7 +8,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-import misc.hummer as hummer
+import pyximport
+pyximport.install()
+import util
 
 if __name__ == "__main__":
     """ Estimate lagtime and rate constants
@@ -83,7 +85,7 @@ if __name__ == "__main__":
             bins = np.load("bins.npy")
         else:
             print "Count observed transitions between bins"
-            Nij_raw = hummer.count_transitions(n_bins,n_frames,bins,x)
+            Nij_raw = util.count_transitions(n_bins,n_frames,bins,x)
             Nij = 0.5*(Nij_raw + Nij_raw.T)
             np.save("Nij.npy",Nij)
             np.save("bins.npy",bins)
