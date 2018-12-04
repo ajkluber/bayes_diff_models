@@ -20,7 +20,7 @@ def plot_figures(neg_lnL_all,F_all,D_all,F,D,bin_centers,beta_MC_schedule,beta_M
     logging.info("  D_final  D_all")
 
     plt.figure()
-    plt.pcolormesh(Tij)
+    plt.pcolormesh(Tij.T)
     plt.colorbar()
     plt.xlabel("bin j")
     plt.ylabel("bin i")

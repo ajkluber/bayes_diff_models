@@ -31,39 +31,31 @@ if __name__ == "__main__":
                         type=str, 
                         required=True,
                         help="Name of reaction coordinate file.")
-
     parser.add_argument("--lag_frames", 
                         type=int, 
                         required=True, 
                         help="Number of frames to subsample.")
-
     parser.add_argument("--n_bins", 
                         type=int, 
                         required=True, 
                         help="Number of bins along reaction coordinate.")
-
     parser.add_argument("--gamma", 
                         type=float, 
                         required=True, 
                         help="Smootheness scale of D.")
-
     parser.add_argument("--dt", 
                         type=float, 
                         default=1, 
                         help="Timestep units per frame. Default: 1ps per frame.")
-
     parser.add_argument("--debug", 
                         action="store_true",
                         help="Output -lnL as opimization proceeds to monitor convergence.")
-
     parser.add_argument("--plotfigs", 
                         action="store_true",
                         help="Plot things")
-
     parser.add_argument("--no_display", 
                         action="store_true",
                         help="Plot things without display available (e.g. on compute node).")
-
     args = parser.parse_args()
 
     coord_file = args.coord_file
@@ -170,7 +162,8 @@ if __name__ == "__main__":
     # Perform Metropolis-Hastings monte carlo 
     ########################################################################
     beta_MC_schedule = [40.,60.]
-    beta_MC_steps = [200,100]
+    #beta_MC_steps = [200,100]  # Default
+    beta_MC_steps = [50,5] # Testing
     D_step_scale = [0.2,0.1]
     F_step_scale = [0.1,0.01]
     n_stages = len(beta_MC_schedule)    

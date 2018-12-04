@@ -233,7 +233,7 @@ def attempt_step_D(np.double_t beta_MC, np.double_t neg_lnL,
     which_bin = np.random.randint(n_bins)
     D_trial = np.array(D,copy=True)
     #step = np.sign(np.random.rand() - 0.5)*D_step[which_bin]
-    step = np.random.normal(scale=step_scale)
+    step = np.random.normal(scale=D_trial[which_bin]*step_scale)
     if (D_trial[which_bin] + step) <= 0:
         # Step rejected. We don't let D be negative
         pass
